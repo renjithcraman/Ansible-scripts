@@ -1,103 +1,24 @@
 ---
-- name: "Building a docker image for flask application"
+- name: "Build, Push, and Test Flask Application Container"
   hosts: docker
   become: true
   vars:
     packages:
       - docker
       - python3-pip
-
     tag_version: "v1"
   vars_files:
     - secrets.yaml
 
   tasks:
-
     - name: "Docker installation"
       yum: 
         name: "{{ packages }}"
         state: present
 
-    - name: "Python module for Docker installation"
+    - name: "Modern Python module for Docker collection"
       pip: 
-        name: "docker-py"
-        state: present
-
-    - name: "Adding user to docker group"
-      user: 
-        name: "ec2-user"
-        groups:
-          - docker
-        append: yes
-
-    - name: "Staring docker service"
-      service:
         name: "docker"
-        state: restarted
-        enabled: true
-    
-    - name: "Copying project data"
-      copy:
-        src: "."
-        dest: /var/    
-
-    - name: "Build docker image"
-      community.docker.docker_image:
-        build:
-          path: "/var/"
-        name: renjithcraman/ansible-flask-app
-        tag: "{{ item }}"
-        source: build
-      loop:
-        - "latest"
-        - "{{ tag_version }}"     
-
-    - name: "Log into DockerHub"
-      community.docker.docker_login:
-        username: "{{ username}}"
-        password: "{{ password }}"  
-
-    - name: "Push docker image"
-      community.docker.docker_image:
-        name: renjithcraman/ansible-flask-app
-        tag: "{{ item }}"
-        push: true
-        source: local
-      loop:
-        - "latest"
-        - "{{ tag_version }}"     
-
-    - name: "Deleting the docker image"
-      community.docker.docker_image:
-        name: renjithcraman/ansible-flask-app
-        tag: "{{ item }}"
-        state: absent
-      loop:
-        - "latest"
-        - "{{ tag_version }}"   
-
-    - name: "Logout from DockerHub"
-      community.docker.docker_login:
-        state: absent        
-
-- name: "Testing docker container"
-  hosts: docker
-  become: true
-  vars:
-    packages:
-      - docker
-      - python3-pip
-
-  tasks:
-
-    - name: "Docker installation"
-      yum: 
-        name: "{{ packages }}"
-        state: present
-
-    - name: "Python module for Docker installation"
-      pip: 
-        name: "docker-py"
         state: present
 
     - name: "Adding user to docker group"
@@ -112,13 +33,47 @@
         name: "docker"
         state: restarted
         enabled: true
+     
+    - name: "Copying project data"
+      copy:
+        src: "."
+        dest: "/var/project/"    # Recommended: use a specific subdirectory instead of root /var/
 
-    - name: "Create the container"
+    - name: "Build docker image"
+      community.docker.docker_image:
+        build:
+          path: "/var/project/"
+        name: "renjithcraman/ansible-flask-app"
+        tag: "{{ item }}"
+        source: build
+      loop:
+        - "latest"
+        - "{{ tag_version }}"      
+
+    - name: "Log into DockerHub"
+      community.docker.docker_login:
+        username: "{{ username }}"
+        password: "{{ password }}"  
+
+    - name: "Push docker image"
+      community.docker.docker_image:
+        name: "renjithcraman/ansible-flask-app"
+        tag: "{{ item }}"
+        push: true
+        source: local
+      loop:
+        - "latest"
+        - "{{ tag_version }}"      
+
+    - name: "Logout from DockerHub"
+      community.docker.docker_login:
+        state: absent         
+
+    - name: "Create and test the container"
       community.docker.docker_container:
-        name: flask-app
-        image: renjithcraman/ansible-flask-app:latest
-        state: started
-        pull: true
+        name: "flask-app"
+        image: "renjithcraman/ansible-flask-app:latest"
+        state: "started"
         recreate: true
         published_ports: 
-          - "80:8080"        
+          - "80:8080"
