@@ -16,9 +16,9 @@
         name: "{{ packages }}"
         state: present
 
-    - name: "Modern Python module for Docker collection"
+    - name: "Python module for Docker installation"
       pip: 
-        name: "docker"
+        name: "docker-py"
         state: present
 
     - name: "Adding user to docker group"
