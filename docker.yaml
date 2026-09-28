@@ -37,7 +37,7 @@
     - name: "Copying project data"
       copy:
         src: "."
-        dest: "/var/project/"    # Recommended: use a specific subdirectory instead of root /var/
+        dest: "/var/project/"   
 
     - name: "Build docker image"
       community.docker.docker_image:
